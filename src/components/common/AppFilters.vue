@@ -88,6 +88,16 @@ watch(
   { immediate: true },
 );
 
+function isValidFilterValue(val: unknown): boolean {
+  if (val === null || val === undefined) {
+    return false;
+  }
+  if (typeof val === 'string') {
+    return val.trim().length > 0;
+  }
+  return true;
+}
+
 function getFieldRules(field: FilterField) {
   if (!field.required) {
     return [];
@@ -95,9 +105,7 @@ function getFieldRules(field: FilterField) {
 
   return [
     (val: unknown) => {
-      const isFilled =
-        typeof val === 'string' ? val.trim().length > 0 : val !== null && val !== undefined;
-      return isFilled || `${field.label} es obligatorio`;
+      return isValidFilterValue(val) || `${field.label} es obligatorio`;
     },
   ];
 }
@@ -114,16 +122,9 @@ async function handleSearch(): Promise<void> {
 
   const activeFilters: FilterValues = {};
   for (const [key, val] of Object.entries(formValues)) {
-    if (val !== null && val !== undefined) {
-      if (typeof val === 'string') {
-        const trimmed = val.trim();
-        if (trimmed.length === 0) {
-          continue;
-        }
-        activeFilters[key] = trimmed;
-      } else {
-        activeFilters[key] = val;
-      }
+    if (isValidFilterValue(val)) {
+      activeFilters[key] =
+        typeof val === 'string' ? val.trim() : (val as string | number | boolean);
     }
   }
 

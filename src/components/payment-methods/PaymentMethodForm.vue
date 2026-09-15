@@ -144,7 +144,7 @@ const formData = reactive<{
 watch(
   () => props.paymentMethod,
   (current) => {
-    if (current && !isEditMode.value) {
+    if (current) {
       formData.name = current.name;
       formData.type = current.type;
       formData.description = current.description || '';
