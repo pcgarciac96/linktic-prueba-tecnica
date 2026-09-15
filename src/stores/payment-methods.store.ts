@@ -12,8 +12,10 @@ interface PaymentMethodsState {
   filters: PaymentMethodFilterCriteria;
   isLoading: boolean;
   isSubmitting: boolean;
+  isDeleting: boolean;
   error: string | null;
   updatingId: string | null;
+  deletingId: string | null;
 }
 
 // Administra el estado global, sincronización reactiva y control de carga de métodos de pago.
@@ -23,8 +25,10 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', {
     filters: {},
     isLoading: false,
     isSubmitting: false,
+    isDeleting: false,
     error: null,
     updatingId: null,
+    deletingId: null,
   }),
 
   getters: {
@@ -138,6 +142,28 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', {
         return false;
       } finally {
         this.updatingId = null;
+      }
+    },
+
+    // Elimina el registro del estado depues confirmar la operación con el servicio.
+    async deletePaymentMethod(id: string): Promise<boolean> {
+      this.isDeleting = true;
+      this.deletingId = id;
+      this.error = null;
+
+      try {
+        await PaymentMethodsService.delete(id);
+        this.rawPaymentMethods = this.rawPaymentMethods.filter((item) => item.id !== id);
+        return true;
+      } catch (err: unknown) {
+        this.error =
+          err instanceof Error
+            ? err.message
+            : 'Ocurrió un error inesperado al eliminar el método de pago.';
+        return false;
+      } finally {
+        this.isDeleting = false;
+        this.deletingId = null;
       }
     },
 

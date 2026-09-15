@@ -95,6 +95,23 @@ export class PaymentMethodsService {
     return JSON.parse(JSON.stringify(item));
   }
 
+  // Simula la eliminación asíncrona del registro en la base de datos en memoria.
+  public static async delete(id: string): Promise<boolean> {
+    await new Promise((resolve) => setTimeout(resolve, this.NETWORK_LATENCY_MS));
+
+    if (this.shouldSimulateError) {
+      throw new Error('No fue posible eliminar el método de pago en el servidor.');
+    }
+
+    const index = this.mockDatabase.findIndex((method) => method.id === id);
+    if (index === -1) {
+      throw new Error(`El método de pago con ID "${id}" no existe.`);
+    }
+
+    this.mockDatabase.splice(index, 1);
+    return true;
+  }
+
   // Restablece el conjunto de datos a su estado original para propósitos de prueba.
   public static resetMockData(): void {
     this.mockDatabase = JSON.parse(JSON.stringify(INITIAL_PAYMENT_METHODS_MOCK));

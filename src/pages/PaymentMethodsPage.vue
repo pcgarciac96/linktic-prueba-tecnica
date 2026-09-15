@@ -122,7 +122,9 @@
               icon="edit"
               color="grey-7"
               :disable="
-                paymentMethodsStore.isLoading || paymentMethodsStore.updatingId === props.row.id
+                paymentMethodsStore.isLoading ||
+                paymentMethodsStore.updatingId === props.row.id ||
+                paymentMethodsStore.deletingId === props.row.id
               "
               @click="handleOpenEditDialog(props.row)"
             >
@@ -134,7 +136,9 @@
               color="positive"
               dense
               :disable="
-                paymentMethodsStore.isLoading || paymentMethodsStore.updatingId === props.row.id
+                paymentMethodsStore.isLoading ||
+                paymentMethodsStore.updatingId === props.row.id ||
+                paymentMethodsStore.deletingId === props.row.id
               "
               @update:model-value="() => handleToggleStatus(props.row.id)"
             >
@@ -142,6 +146,22 @@
                 {{ props.row.active ? 'Desactivar método' : 'Activar método' }}
               </q-tooltip>
             </q-toggle>
+
+            <q-btn
+              flat
+              round
+              dense
+              icon="delete"
+              color="negative"
+              :disable="
+                paymentMethodsStore.isLoading ||
+                paymentMethodsStore.updatingId === props.row.id ||
+                paymentMethodsStore.deletingId === props.row.id
+              "
+              @click="handleOpenDeleteDialog(props.row)"
+            >
+              <q-tooltip anchor="top middle" self="bottom middle"> Eliminar método </q-tooltip>
+            </q-btn>
           </q-td>
         </template>
 
@@ -168,6 +188,42 @@
         @save="handleSavePaymentMethod"
         @cancel="handleCloseDialog"
       />
+    </q-dialog>
+
+    <!-- Diálogo de confirmación para eliminación -->
+    <q-dialog v-model="isDeleteDialogOpen" persistent>
+      <q-card class="confirm-dialog-card">
+        <q-card-section class="row items-center q-pb-none">
+          <q-avatar icon="delete_outline" color="red-1" text-color="negative" size="md" />
+          <div class="text-h6 text-weight-bold q-ml-sm text-grey-9">Eliminar método de pago</div>
+        </q-card-section>
+
+        <q-card-section class="q-pt-md text-body1 text-grey-8">
+          ¿Está seguro de que desea eliminar el método de pago
+          <span class="text-weight-bold">"{{ methodToDelete?.name }}"</span>? Esta acción no se
+          puede deshacer.
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn
+            flat
+            label="Cancelar"
+            color="grey-7"
+            no-caps
+            :disable="paymentMethodsStore.isDeleting"
+            @click="handleCancelDelete"
+          />
+          <q-btn
+            unelevated
+            label="Eliminar"
+            color="negative"
+            no-caps
+            icon="delete"
+            :loading="paymentMethodsStore.isDeleting"
+            @click="handleConfirmDelete"
+          />
+        </q-card-actions>
+      </q-card>
     </q-dialog>
   </q-page>
 </template>
@@ -198,6 +254,9 @@ const paymentMethodsStore = usePaymentMethodsStore();
 
 const isDialogOpen = ref<boolean>(false);
 const selectedPaymentMethod = ref<PaymentMethod | null>(null);
+
+const isDeleteDialogOpen = ref<boolean>(false);
+const methodToDelete = ref<PaymentMethod | null>(null);
 
 const initialPagination = {
   sortBy: 'createdAt',
@@ -383,6 +442,41 @@ async function handleSavePaymentMethod(payload: {
   }
 }
 
+function handleOpenDeleteDialog(row: PaymentMethod): void {
+  methodToDelete.value = row;
+  isDeleteDialogOpen.value = true;
+}
+
+function handleCancelDelete(): void {
+  isDeleteDialogOpen.value = false;
+  methodToDelete.value = null;
+}
+
+// Confirma la eliminación antes de modificar el listado.
+async function handleConfirmDelete(): Promise<void> {
+  if (!methodToDelete.value) {
+    return;
+  }
+
+  const success = await paymentMethodsStore.deletePaymentMethod(methodToDelete.value.id);
+
+  if (success) {
+    $q.notify({
+      type: 'positive',
+      message: 'Método de pago eliminado exitosamente',
+      position: 'top',
+    });
+    isDeleteDialogOpen.value = false;
+    methodToDelete.value = null;
+  } else {
+    $q.notify({
+      type: 'negative',
+      message: paymentMethodsStore.error || 'Error al eliminar el método de pago',
+      position: 'top',
+    });
+  }
+}
+
 onMounted(async () => {
   await paymentMethodsStore.fetchPaymentMethods();
 });
@@ -394,6 +488,12 @@ onMounted(async () => {
 }
 
 .payment-methods-table {
+  border-radius: 8px;
+}
+
+.confirm-dialog-card {
+  width: 100%;
+  max-width: 440px;
   border-radius: 8px;
 }
 </style>
