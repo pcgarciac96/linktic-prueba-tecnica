@@ -115,7 +115,15 @@ async function handleSearch(): Promise<void> {
   const activeFilters: FilterValues = {};
   for (const [key, val] of Object.entries(formValues)) {
     if (val !== null && val !== undefined) {
-      activeFilters[key] = val;
+      if (typeof val === 'string') {
+        const trimmed = val.trim();
+        if (trimmed.length === 0) {
+          continue;
+        }
+        activeFilters[key] = trimmed;
+      } else {
+        activeFilters[key] = val;
+      }
     }
   }
 
