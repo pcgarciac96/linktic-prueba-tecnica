@@ -5,19 +5,10 @@ import {
   createWebHashHistory,
   createWebHistory,
 } from 'vue-router';
-
 import routes from './routes';
+import { useAuthStore } from '@/stores/auth.store';
 
-/*
- * If not building with SSR mode, you can
- * directly export the Router instantiation;
- *
- * The function below can be async too; either use
- * async/await or return a Promise which resolves
- * with the Router instance.
- */
-
-export default defineRouter((/* { store, ssrContext } */) => {
+export default defineRouter(({ store }) => {
   const createHistory = import.meta.env.QUASAR_SERVER
     ? createMemoryHistory
     : import.meta.env.QUASAR_VUE_ROUTER_MODE === 'history'
@@ -27,11 +18,31 @@ export default defineRouter((/* { store, ssrContext } */) => {
   const Router = createRouter({
     scrollBehavior: () => ({ left: 0, top: 0 }),
     routes,
-
-    // Leave this as is and make changes in quasar.conf.js instead!
-    // quasar.conf.js -> build -> vueRouterMode
-    // quasar.conf.js -> build -> publicPath
     history: createHistory(import.meta.env.QUASAR_VUE_ROUTER_BASE),
+  });
+
+  // Restaura la sesión persistida antes de resolver la navegación inicial.
+  const authStore = useAuthStore(store);
+  authStore.restoreSession();
+
+  // Controla el acceso a rutas protegidas y públicas según el estado de sesión.
+  Router.beforeEach((to, _from, next) => {
+    const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
+    const isAuthenticated = authStore.isAuthenticated;
+
+    // Evita que usuarios no autenticados ingresen a secciones privadas.
+    if (requiresAuth && !isAuthenticated) {
+      next({ path: '/login', query: { redirect: to.fullPath } });
+      return;
+    }
+
+    // Evita que usuarios con sesión activa vuelvan a loguearse.
+    if (to.path === '/login' && isAuthenticated) {
+      next({ path: '/payment-methods' });
+      return;
+    }
+
+    next();
   });
 
   return Router;
