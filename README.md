@@ -1,38 +1,51 @@
-# Linktic Prueba Tecnica (linktic-prueba-tecnica)
+# Linktic Prueba Técnica - Gestión de Métodos de Pago
 
-## Install the dependencies
+Aplicación frontend construida con **Vue 3**, **Quasar Framework v2**, **TypeScript**, **Pinia** y **Vue Router**.
 
-```bash
-pnpm install
-# or: yarn/npm/bun install
-```
+## Módulo de Autenticación y Seguridad (Fase 2)
 
-### Start the app in development mode (HMR, error reporting, etc.)
+La aplicación implementa un flujo completo de autenticación desacoplada con simulación asíncrona (mock service) y persistencia de sesión en `localStorage`.
 
-```bash
-quasar dev
-```
+### Credenciales Mock de Acceso
 
-### Format & Lint the files
+| Campo                  | Valor               |
+| ---------------------- | ------------------- |
+| **Correo Electrónico** | `admin@example.com` |
+| **Contraseña**         | `Admin123*`         |
 
-```bash
-pnpm run lint
-# or: yarn/npm/bun run lint
-```
+> [!NOTE]
+> Las credenciales de prueba están en `src/mocks/user.mock.ts` y desacopladas de las vistas.
 
-...or just check formatting & linting:
+---
 
-```bash
-pnpm run lint:check
-# or: yarn/npm/bun run lint:check
-```
+## Requisitos Previos
 
-### Build the app for production
+- **Node.js**: `>= 22.22.0` (definido en `.nvmrc`)
+- **npm**: `>= 10.9.0`
+
+Si utiliza `nvm`, activa la versión compatible con:
 
 ```bash
-quasar build
+nvm use
 ```
 
-### Customize the configuration
+---
 
-See [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-vite/quasar-config-file).
+## Instalación y Ejecución
+
+```bash
+# Instalar dependencias
+npm install
+
+# Iniciar servidor
+npm run dev
+
+# Verificación de TypeScript
+npm run typecheck
+
+# Verificación de linter y formato
+npm run lint:check
+
+# Compilar para producción (SPA)
+npm run build
+```
