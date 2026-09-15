@@ -23,3 +23,9 @@ export const PAYMENT_METHOD_TYPE_ICONS: Record<PaymentMethodType, string> = {
   CASH: 'payments',
   WALLET: 'account_balance_wallet',
 };
+
+export interface PaymentMethodFilterCriteria {
+  name?: string | undefined;
+  type?: PaymentMethodType | undefined;
+  active?: boolean | undefined;
+}

@@ -11,9 +11,16 @@
 
       <!-- creacion de -->
       <div>
-        <q-btn color="primary" icon="add" label="Nuevo método" unelevated disable> </q-btn>
+        <q-btn color="primary" icon="add" label="Nuevo método" unelevated disable>
+          <q-tooltip anchor="top middle" self="bottom middle">
+            La creación de métodos de pago estará disponible en la Fase 5
+          </q-tooltip>
+        </q-btn>
       </div>
     </div>
+
+    <!-- Filtros genéricos -->
+    <AppFilters :fields="filterFields" @search="handleSearch" @clear="handleClear" />
 
     <div v-if="paymentMethodsStore.error" class="q-mb-md">
       <q-banner dense rounded class="bg-red-1 text-negative border-negative">
@@ -126,7 +133,7 @@
               No hay métodos de pago registrados
             </div>
             <div class="text-body2 text-grey-6">
-              Actualmente no existen registros para visualizar en este módulo.
+              No se encontraron registros que coincidan con los criterios de búsqueda.
             </div>
           </div>
         </template>
@@ -138,13 +145,15 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import type { QTableColumn } from 'quasar';
-import type { PaymentMethodType } from '@/types/payment-method.types';
+import type { FilterField, FilterValues } from '@/types/filter.types';
+import type { PaymentMethodFilterCriteria, PaymentMethodType } from '@/types/payment-method.types';
 import {
   PAYMENT_METHOD_TYPE_LABELS,
   PAYMENT_METHOD_TYPE_ICONS,
 } from '@/types/payment-method.types';
 import { usePaymentMethodsStore } from '@/stores/payment-methods.store';
 import { formatDate } from '@/utils/date-formatter';
+import AppFilters from '@/components/common/AppFilters.vue';
 
 const paymentMethodsStore = usePaymentMethodsStore();
 
@@ -154,6 +163,41 @@ const initialPagination = {
   page: 1,
   rowsPerPage: 10,
 };
+
+// Declaración desacoplada de los campos de filtro requeridos para el módulo.
+const filterFields: FilterField[] = [
+  {
+    name: 'name',
+    label: 'Nombre',
+    type: 'text',
+    placeholder: 'Buscar por nombre...',
+    colClass: 'col-12 col-sm-6 col-md-4',
+  },
+  {
+    name: 'type',
+    label: 'Tipo',
+    type: 'select',
+    placeholder: 'Todos los tipos',
+    options: [
+      { label: 'Tarjeta', value: 'CARD' },
+      { label: 'Transferencia', value: 'TRANSFER' },
+      { label: 'Efectivo', value: 'CASH' },
+      { label: 'Billetera digital', value: 'WALLET' },
+    ],
+    colClass: 'col-12 col-sm-6 col-md-4',
+  },
+  {
+    name: 'active',
+    label: 'Estado',
+    type: 'select',
+    placeholder: 'Todos los estados',
+    options: [
+      { label: 'Activo', value: true },
+      { label: 'Inactivo', value: false },
+    ],
+    colClass: 'col-12 col-sm-6 col-md-4',
+  },
+];
 
 const columns: QTableColumn[] = [
   {
@@ -206,7 +250,26 @@ async function handleToggleStatus(id: string): Promise<void> {
   await paymentMethodsStore.toggleStatus(id);
 }
 
-// Carga asíncrona de los métodos de pago al montar el componente.
+// Delega al store la aplicación de los filtros emitidos por AppFilters.
+function handleSearch(filters: FilterValues): void {
+  const criteria: PaymentMethodFilterCriteria = {};
+  if (typeof filters.name === 'string') {
+    criteria.name = filters.name;
+  }
+  if (typeof filters.type === 'string') {
+    criteria.type = filters.type as PaymentMethodType;
+  }
+  if (typeof filters.active === 'boolean') {
+    criteria.active = filters.active;
+  }
+  paymentMethodsStore.applyFilters(criteria);
+}
+
+// Restablece el listado completo eliminando los criterios de búsqueda en el store.
+function handleClear(): void {
+  paymentMethodsStore.clearFilters();
+}
+
 onMounted(async () => {
   await paymentMethodsStore.fetchPaymentMethods();
 });

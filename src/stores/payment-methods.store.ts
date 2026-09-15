@@ -1,9 +1,10 @@
 import { defineStore, acceptHMRUpdate } from 'pinia';
-import type { PaymentMethod } from '@/types/payment-method.types';
+import type { PaymentMethod, PaymentMethodFilterCriteria } from '@/types/payment-method.types';
 import { PaymentMethodsService } from '@/services/payment-methods.service';
 
 interface PaymentMethodsState {
-  paymentMethods: PaymentMethod[];
+  rawPaymentMethods: PaymentMethod[];
+  filters: PaymentMethodFilterCriteria;
   isLoading: boolean;
   error: string | null;
   updatingId: string | null;
@@ -12,16 +13,37 @@ interface PaymentMethodsState {
 // Administra el estado global, sincronización reactiva y control de carga de métodos de pago.
 export const usePaymentMethodsStore = defineStore('paymentMethods', {
   state: (): PaymentMethodsState => ({
-    paymentMethods: [],
+    rawPaymentMethods: [],
+    filters: {},
     isLoading: false,
     error: null,
     updatingId: null,
   }),
 
   getters: {
-    allPaymentMethods: (state): PaymentMethod[] => state.paymentMethods,
-    totalCount: (state): number => state.paymentMethods.length,
-    activeCount: (state): number => state.paymentMethods.filter((item) => item.active).length,
+    // Calcula la lista visible aplicando los criterios de búsqueda de forma reactiva.
+    paymentMethods: (state): PaymentMethod[] => {
+      let result = state.rawPaymentMethods;
+
+      if (state.filters.name) {
+        const query = state.filters.name.trim().toLowerCase();
+        result = result.filter((item) => item.name.toLowerCase().includes(query));
+      }
+
+      if (state.filters.type) {
+        result = result.filter((item) => item.type === state.filters.type);
+      }
+
+      if (state.filters.active) {
+        result = result.filter((item) => item.active === state.filters.active);
+      }
+
+      return result;
+    },
+
+    allPaymentMethods: (state): PaymentMethod[] => state.rawPaymentMethods,
+    totalCount: (state): number => state.rawPaymentMethods.length,
+    activeCount: (state): number => state.rawPaymentMethods.filter((item) => item.active).length,
   },
 
   actions: {
@@ -32,12 +54,10 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', {
 
       try {
         const data = await PaymentMethodsService.getAll();
-        this.paymentMethods = data;
+        this.rawPaymentMethods = data;
       } catch (err: unknown) {
         this.error =
-          err instanceof Error
-            ? err.message
-            : 'Error desconocido al cargar los métodos de pago.';
+          err instanceof Error ? err.message : 'Error desconocido al cargar los métodos de pago.';
       } finally {
         this.isLoading = false;
       }
@@ -51,10 +71,10 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', {
       try {
         const updated = await PaymentMethodsService.toggleStatus(id);
 
-        // Actualiza el elemento exacto dentro del array para activar la reactividad de Vue.
-        const targetIndex = this.paymentMethods.findIndex((item) => item.id === id);
+        // Actualiza el elemento exacto dentro del array  para activar la reactividad.
+        const targetIndex = this.rawPaymentMethods.findIndex((item) => item.id === id);
         if (targetIndex !== -1) {
-          this.paymentMethods[targetIndex] = updated;
+          this.rawPaymentMethods[targetIndex] = updated;
         }
 
         return true;
@@ -67,6 +87,20 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', {
       } finally {
         this.updatingId = null;
       }
+    },
+
+    // Aplica criterios de filtrado sobre el listado actual.
+    applyFilters(criteria: PaymentMethodFilterCriteria): void {
+      this.filters = { ...criteria };
+    },
+
+    // Restaura el listado completo eliminando todos los filtros activos.
+    clearFilters(): void {
+      this.filters = {
+        name: undefined,
+        type: undefined,
+        active: this.filters.active,
+      };
     },
 
     clearError(): void {
