@@ -1,11 +1,17 @@
 import { defineStore, acceptHMRUpdate } from 'pinia';
-import type { PaymentMethod, PaymentMethodFilterCriteria } from '@/types/payment-method.types';
+import type {
+  PaymentMethod,
+  PaymentMethodFilterCriteria,
+  CreatePaymentMethodPayload,
+  UpdatePaymentMethodPayload,
+} from '@/types/payment-method.types';
 import { PaymentMethodsService } from '@/services/payment-methods.service';
 
 interface PaymentMethodsState {
   rawPaymentMethods: PaymentMethod[];
   filters: PaymentMethodFilterCriteria;
   isLoading: boolean;
+  isSubmitting: boolean;
   error: string | null;
   updatingId: string | null;
 }
@@ -16,6 +22,7 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', {
     rawPaymentMethods: [],
     filters: {},
     isLoading: false,
+    isSubmitting: false,
     error: null,
     updatingId: null,
   }),
@@ -34,7 +41,7 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', {
         result = result.filter((item) => item.type === state.filters.type);
       }
 
-      if (state.filters.active) {
+      if (typeof state.filters.active === 'boolean') {
         result = result.filter((item) => item.active === state.filters.active);
       }
 
@@ -60,6 +67,51 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', {
           err instanceof Error ? err.message : 'Error desconocido al cargar los métodos de pago.';
       } finally {
         this.isLoading = false;
+      }
+    },
+
+    // Creación de un nuevo método de pago.
+    async createPaymentMethod(payload: CreatePaymentMethodPayload): Promise<boolean> {
+      this.isSubmitting = true;
+      this.error = null;
+
+      try {
+        const created = await PaymentMethodsService.create(payload);
+        this.rawPaymentMethods.unshift(created);
+        return true;
+      } catch (err: unknown) {
+        this.error =
+          err instanceof Error
+            ? err.message
+            : 'Ocurrió un error inesperado al crear el método de pago.';
+        return false;
+      } finally {
+        this.isSubmitting = false;
+      }
+    },
+
+    // Actualización de un método de pago existente.
+    async updatePaymentMethod(id: string, payload: UpdatePaymentMethodPayload): Promise<boolean> {
+      this.isSubmitting = true;
+      this.error = null;
+
+      try {
+        const updated = await PaymentMethodsService.update(id, payload);
+
+        const targetIndex = this.rawPaymentMethods.findIndex((item) => item.id === id);
+        if (targetIndex !== -1) {
+          this.rawPaymentMethods[targetIndex] = updated;
+        }
+
+        return true;
+      } catch (err: unknown) {
+        this.error =
+          err instanceof Error
+            ? err.message
+            : 'Ocurrió un error inesperado al actualizar el método de pago.';
+        return false;
+      } finally {
+        this.isSubmitting = false;
       }
     },
 

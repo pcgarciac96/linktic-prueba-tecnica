@@ -11,9 +11,15 @@
 
       <!-- creacion de -->
       <div>
-        <q-btn color="primary" icon="add" label="Nuevo método" unelevated disable>
+        <q-btn
+          color="primary"
+          icon="add"
+          label="Nuevo método"
+          unelevated
+          @click="handleOpenCreateDialog"
+        >
           <q-tooltip anchor="top middle" self="bottom middle">
-            La creación de métodos de pago estará disponible en la Fase 5
+            Crear nuevo método de pago.
           </q-tooltip>
         </q-btn>
       </div>
@@ -108,7 +114,21 @@
 
         <!-- Columna Acciones con conmutador de estado reactivo -->
         <template #body-cell-actions="props">
-          <q-td :props="props" align="center">
+          <q-td :props="props" align="center" class="q-gutter-x-sm">
+            <q-btn
+              flat
+              round
+              dense
+              icon="edit"
+              color="grey-7"
+              :disable="
+                paymentMethodsStore.isLoading || paymentMethodsStore.updatingId === props.row.id
+              "
+              @click="handleOpenEditDialog(props.row)"
+            >
+              <q-tooltip anchor="top middle" self="bottom middle"> Editar método </q-tooltip>
+            </q-btn>
+
             <q-toggle
               :model-value="props.row.active"
               color="positive"
@@ -139,14 +159,31 @@
         </template>
       </q-table>
     </q-card>
+
+    <!--  modal reutilizable -->
+    <q-dialog v-model="isDialogOpen" persistent>
+      <PaymentMethodForm
+        :payment-method="selectedPaymentMethod"
+        :loading="paymentMethodsStore.isSubmitting"
+        @save="handleSavePaymentMethod"
+        @cancel="handleCloseDialog"
+      />
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
+import { useQuasar } from 'quasar';
 import type { QTableColumn } from 'quasar';
 import type { FilterField, FilterValues } from '@/types/filter.types';
-import type { PaymentMethodFilterCriteria, PaymentMethodType } from '@/types/payment-method.types';
+import type {
+  PaymentMethod,
+  PaymentMethodFilterCriteria,
+  PaymentMethodType,
+  CreatePaymentMethodPayload,
+  UpdatePaymentMethodPayload,
+} from '@/types/payment-method.types';
 import {
   PAYMENT_METHOD_TYPE_LABELS,
   PAYMENT_METHOD_TYPE_ICONS,
@@ -154,8 +191,13 @@ import {
 import { usePaymentMethodsStore } from '@/stores/payment-methods.store';
 import { formatDate } from '@/utils/date-formatter';
 import AppFilters from '@/components/common/AppFilters.vue';
+import PaymentMethodForm from '@/components/payment-methods/PaymentMethodForm.vue';
 
+const $q = useQuasar();
 const paymentMethodsStore = usePaymentMethodsStore();
+
+const isDialogOpen = ref<boolean>(false);
+const selectedPaymentMethod = ref<PaymentMethod | null>(null);
 
 const initialPagination = {
   sortBy: 'createdAt',
@@ -268,6 +310,77 @@ function handleSearch(filters: FilterValues): void {
 // Restablece el listado completo eliminando los criterios de búsqueda en el store.
 function handleClear(): void {
   paymentMethodsStore.clearFilters();
+}
+
+function handleOpenCreateDialog(): void {
+  selectedPaymentMethod.value = null;
+  isDialogOpen.value = true;
+}
+
+function handleOpenEditDialog(row: PaymentMethod): void {
+  selectedPaymentMethod.value = { ...row };
+  isDialogOpen.value = true;
+}
+
+function handleCloseDialog(): void {
+  isDialogOpen.value = false;
+  selectedPaymentMethod.value = null;
+}
+
+async function handleSavePaymentMethod(payload: {
+  id?: string | undefined;
+  name: string;
+  type: PaymentMethodType;
+  description?: string | undefined;
+}): Promise<void> {
+  if (selectedPaymentMethod.value) {
+    const updatePayload: UpdatePaymentMethodPayload = {
+      name: payload.name,
+      type: payload.type,
+      description: payload.description,
+    };
+    const success = await paymentMethodsStore.updatePaymentMethod(
+      selectedPaymentMethod.value.id,
+      updatePayload,
+    );
+
+    if (success) {
+      $q.notify({
+        type: 'positive',
+        message: 'Método de pago actualizado exitosamente',
+        position: 'top',
+      });
+      handleCloseDialog();
+    } else {
+      $q.notify({
+        type: 'negative',
+        message: paymentMethodsStore.error || 'Error al actualizar el método de pago',
+        position: 'top',
+      });
+    }
+  } else {
+    const createPayload: CreatePaymentMethodPayload = {
+      name: payload.name,
+      type: payload.type,
+      description: payload.description,
+    };
+    const success = await paymentMethodsStore.createPaymentMethod(createPayload);
+
+    if (success) {
+      $q.notify({
+        type: 'positive',
+        message: 'Método de pago creado exitosamente',
+        position: 'top',
+      });
+      handleCloseDialog();
+    } else {
+      $q.notify({
+        type: 'negative',
+        message: paymentMethodsStore.error || 'Error al crear el método de pago',
+        position: 'top',
+      });
+    }
+  }
 }
 
 onMounted(async () => {

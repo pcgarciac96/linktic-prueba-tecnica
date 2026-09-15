@@ -29,3 +29,15 @@ export interface PaymentMethodFilterCriteria {
   type?: PaymentMethodType | undefined;
   active?: boolean | undefined;
 }
+
+export interface CreatePaymentMethodPayload {
+  name: string;
+  type: PaymentMethodType;
+  description?: string | undefined;
+}
+
+export interface UpdatePaymentMethodPayload {
+  name: string;
+  type: PaymentMethodType;
+  description?: string | undefined;
+}

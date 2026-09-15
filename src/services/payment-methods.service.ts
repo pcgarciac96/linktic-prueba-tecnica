@@ -1,4 +1,8 @@
-import type { PaymentMethod } from '@/types/payment-method.types';
+import type {
+  PaymentMethod,
+  CreatePaymentMethodPayload,
+  UpdatePaymentMethodPayload,
+} from '@/types/payment-method.types';
 import { INITIAL_PAYMENT_METHODS_MOCK } from '@/mocks/payment-methods.mock';
 
 // Simula las operaciones de una API REST manteniendo el estado en memoria durante la sesión.
@@ -26,6 +30,52 @@ export class PaymentMethodsService {
     }
 
     return JSON.parse(JSON.stringify(this.mockDatabase));
+  }
+
+  // Simula una petición POST /api/payment-methods para crear un nuevo registro.
+  public static async create(payload: CreatePaymentMethodPayload): Promise<PaymentMethod> {
+    await new Promise((resolve) => setTimeout(resolve, this.NETWORK_LATENCY_MS));
+
+    if (this.shouldSimulateError) {
+      throw new Error('No fue posible crear el método de pago en el servidor.');
+    }
+
+    // Centraliza la generación de identificadores y metadatos fuera de la capa visual.
+    const newMethod: PaymentMethod = {
+      id: `pm-${Date.now()}`,
+      name: payload.name.trim(),
+      type: payload.type,
+      description: payload.description ? payload.description.trim() : '',
+      active: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    this.mockDatabase.unshift(newMethod);
+    return JSON.parse(JSON.stringify(newMethod));
+  }
+
+  // Simula una petición PUT /api/payment-methods/:id para actualizar un registro existente.
+  public static async update(
+    id: string,
+    payload: UpdatePaymentMethodPayload,
+  ): Promise<PaymentMethod> {
+    await new Promise((resolve) => setTimeout(resolve, this.NETWORK_LATENCY_MS));
+
+    if (this.shouldSimulateError) {
+      throw new Error('No fue posible actualizar la información del método de pago.');
+    }
+
+    const item = this.mockDatabase.find((method) => method.id === id);
+    if (!item) {
+      throw new Error(`El método de pago con ID "${id}" no existe.`);
+    }
+
+    // Actualiza únicamente los atributos editables garantizando la inmutabilidad de id, createdAt y active.
+    item.name = payload.name.trim();
+    item.type = payload.type;
+    item.description = payload.description ? payload.description.trim() : '';
+
+    return JSON.parse(JSON.stringify(item));
   }
 
   // Simula una petición PATCH /api/payment-methods/:id/status para conmutar el estado.
