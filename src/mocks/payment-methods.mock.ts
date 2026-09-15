@@ -1,0 +1,60 @@
+import type { PaymentMethod } from '@/types/payment-method.types';
+
+export const INITIAL_PAYMENT_METHODS_MOCK: PaymentMethod[] = [
+  {
+    id: 'pm-001',
+    name: 'Tarjeta Débito',
+    type: 'CARD',
+    description: 'Tarjeta de débito',
+    active: true,
+    createdAt: '2026-01-10T08:30:00.000Z',
+  },
+  {
+    id: 'pm-002',
+    name: 'Tarjeta Crédito',
+    type: 'CARD',
+    description: 'Tarjeta de crédito',
+    active: true,
+    createdAt: '2026-01-12T10:15:00.000Z',
+  },
+  {
+    id: 'pm-003',
+    name: 'PSE',
+    type: 'TRANSFER',
+    description: 'Débito automático desde cuentas bancarias',
+    active: true,
+    createdAt: '2026-01-20T14:45:00.000Z',
+  },
+  {
+    id: 'pm-004',
+    name: 'Transferencia Bancolombia',
+    type: 'TRANSFER',
+    description: 'Transferencia entre Bancolombia.',
+    active: false,
+    createdAt: '2026-01-28T09:00:00.000Z',
+  },
+  {
+    id: 'pm-005',
+    name: 'Efecty',
+    type: 'CASH',
+    description: 'Pin de pago en corresponsales.',
+    active: true,
+    createdAt: '2026-02-05T16:20:00.000Z',
+  },
+  {
+    id: 'pm-006',
+    name: 'Contra Entrega',
+    type: 'CASH',
+    description: 'Cancelación en efectivo al momebnto de la entrega.',
+    active: false,
+    createdAt: '2026-02-14T11:10:00.000Z',
+  },
+  {
+    id: 'pm-007',
+    name: 'Nequi',
+    type: 'WALLET',
+    description: 'Pago por Nequi.',
+    active: true,
+    createdAt: '2026-02-25T13:40:00.000Z',
+  },
+];
