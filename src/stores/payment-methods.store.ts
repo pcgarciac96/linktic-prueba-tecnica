@@ -96,11 +96,7 @@ export const usePaymentMethodsStore = defineStore('paymentMethods', {
 
     // Restaura el listado completo eliminando todos los filtros activos.
     clearFilters(): void {
-      this.filters = {
-        name: undefined,
-        type: undefined,
-        active: this.filters.active,
-      };
+      this.filters = {};
     },
 
     clearError(): void {
