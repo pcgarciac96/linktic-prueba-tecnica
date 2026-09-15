@@ -47,6 +47,8 @@ nvm use
 
 ## 4. Instalación
 
+> **Importante**: Todo el desarrollo y las fases de la prueba técnica se encuentran implementadas en la rama **`feature/prueba-tecnica`**. Asegúrese de ubicarse en esta rama antes de continuar.
+
 1. Clone el repositorio en su máquina local:
 
    ```bash
@@ -59,7 +61,14 @@ nvm use
    cd linktic-prueba-tecnica
    ```
 
-3. Instale las dependencias del proyecto:
+3. Cambie a la rama de trabajo de la prueba:
+
+   ```bash
+   git checkout feature/prueba-tecnica
+   ```
+
+4. Instale las dependencias del proyecto:
+
    ```bash
    npm install
    ```
